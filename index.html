@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Depression Risk System</title>
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            text-align: center;
+            color: white;
+            margin: 0;
+            transition: 0.8s;
+        }
+
+        .container {
+            background: white;
+            color: black;
+            max-width: 500px;
+            margin: 40px auto;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0px 10px 30px rgba(0,0,0,0.3);
+        }
+
+        input {
+            width: 85%;
+            padding: 10px;
+            margin: 6px;
+            border-radius: 10px;
+            border: none;
+            background: #f1f1f1;
+        }
+
+        button {
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: none;
+            background: linear-gradient(45deg, #ff6a00, #ee0979);
+            color: white;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        #wellnessBox {
+            background: #ffe0e0;
+            padding: 10px;
+            border-radius: 10px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        ul li {
+            background: #f1f1f1;
+            margin: 5px;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        #gameBoard button {
+            height: 80px;
+            width: 80px;
+            font-size: 20px;
+        }
+
+        #breathCircle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: #4ecdc4;
+            margin: 20px auto;
+            transition: all 4s ease-in-out;
+        }
+
+        #musicTiles button {
+            height: 70px;
+            width: 70px;
+            border-radius: 15px;
+            font-size: 20px;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>🌈 Depression Risk System</h2>
+
+<input id="screen" placeholder="Screen Time"><br>
+<input id="sleep" placeholder="Sleep Hours"><br>
+<input id="activity" placeholder="Activity Level"><br>
+<input id="social" placeholder="Social Interaction"><br>
+
+<button onclick="predict()">Check Risk</button>
+
+<h3 id="result"></h3>
+<p id="advice"></p>
+<p id="motivation"></p>
+
+<h3>📊 Dashboard</h3>
+<canvas id="chart"></canvas>
+
+<h3>💙 Mental Wellness Support</h3>
+<div id="wellnessBox"></div>
+
+<h3>🧘 Therapy & Physical Care</h3>
+<ul id="therapyList"></ul>
+
+<h3>😮‍💨 Breathing Exercise</h3>
+<button onclick="startBreathing()">Start</button>
+<button onclick="stopBreathing()">Stop</button>
+<div id="breathCircle"></div>
+<p id="breathing"></p>
+
+<h3>🎮 Relaxation Game (Tic Tac Toe)</h3>
+<div id="gameBoard" style="display:grid;grid-template-columns:repeat(3,80px);gap:5px;justify-content:center;"></div>
+<p id="gameStatus"></p>
+<button onclick="resetGame()">Restart Game</button>
+
+<h3>🎵 Relaxation Music Tiles</h3>
+<div id="musicTiles" style="display:grid;grid-template-columns:repeat(4,70px);gap:10px;justify-content:center;"></div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+let myChart;
+
+// Prediction
+function predict() {
+
+    let screen = document.getElementById('screen').value;
+    let sleep = document.getElementById('sleep').value;
+    let activity = document.getElementById('activity').value;
+    let social = document.getElementById('social').value;
+
+    fetch('http://127.0.0.1:5000/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            screen_time: screen,
+            sleep_hours: sleep,
+            activity_level: activity,
+            social_interaction: social
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        document.getElementById('result').innerText = "Risk: " + data.risk;
+        document.getElementById('advice').innerText = "Advice: " + data.advice;
+        document.getElementById('motivation').innerText =
+        "🌟 You are not alone. Small steps make big changes!";
+
+        showChart(screen, sleep, activity, social);
+        updateWellness(data.risk);
+    });
+}
+
+// Chart
+function showChart(screen, sleep, activity, social) {
+
+    if (myChart) myChart.destroy();
+
+    myChart = new Chart(document.getElementById("chart"), {
+        type: 'bar',
+        data: {
+            labels: ["Screen", "Sleep", "Activity", "Social"],
+            datasets: [{
+                label: "User Data",
+                data: [screen, sleep, activity, social],
+                backgroundColor: ["#ff6b6b","#4ecdc4","#45b7d1","#f9ca24"]
+            }]
+        },
+        options: {
+            scales: {
+                y: { beginAtZero: true, max: 10 }
+            }
+        }
+    });
+}
+
+// Wellness
+function updateWellness(risk) {
+
+    let box = document.getElementById("wellnessBox");
+    let therapy = document.getElementById("therapyList");
+    therapy.innerHTML = "";
+
+    if (risk.includes("High")) {
+
+        box.innerText = "💔 You may be feeling low. Take care ❤️";
+
+        therapy.innerHTML += "<li>🧘 Deep breathing</li>";
+        therapy.innerHTML += "<li>🚶 Walk</li>";
+        therapy.innerHTML += "<li>💬 Talk</li>";
+
+    } else if (risk.includes("Moderate")) {
+
+        box.innerText = "🙂 Stay balanced";
+
+        therapy.innerHTML += "<li>🧘 Meditation</li>";
+        therapy.innerHTML += "<li>🏃 Exercise</li>";
+
+    } else {
+
+        box.innerText = "😊 You are doing great!";
+        therapy.innerHTML += "<li>💪 Maintain routine</li>";
+    }
+}
+
+// Breathing
+let breathingInterval;
+
+function startBreathing() {
+
+    let text = document.getElementById("breathing");
+    let circle = document.getElementById("breathCircle");
+
+    let steps = [
+        {text: "Inhale 😮‍💨", scale: 1.5, color: "#4ecdc4"},
+        {text: "Hold 😐", scale: 1.5, color: "#f7b731"},
+        {text: "Exhale 😌", scale: 1, color: "#ff6b6b"}
+    ];
+
+    let i = 0;
+
+    clearInterval(breathingInterval);
+
+    breathingInterval = setInterval(() => {
+
+        let step = steps[i % 3];
+
+        text.innerText = step.text;
+        circle.style.transform = `scale(${step.scale})`;
+        circle.style.background = step.color;
+
+        i++;
+
+    }, 4000);
+}
+
+function stopBreathing() {
+
+    clearInterval(breathingInterval);
+
+    document.getElementById("breathing").innerText = "🛑 Stopped";
+
+    let circle = document.getElementById("breathCircle");
+    circle.style.transform = "scale(1)";
+    circle.style.background = "#4ecdc4";
+}
+
+// Tic Tac Toe
+let board = ["","","","","","","","",""];
+let gameActive = true;
+
+function createBoard() {
+    let boardDiv = document.getElementById("gameBoard");
+    boardDiv.innerHTML = "";
+
+    board.forEach((cell, i) => {
+        let btn = document.createElement("button");
+        btn.innerText = cell;
+        btn.onclick = () => playerMove(i);
+        boardDiv.appendChild(btn);
+    });
+}
+
+function playerMove(i) {
+    if (board[i] !== "" || !gameActive) return;
+
+    board[i] = "X";
+    updateBoard();
+
+    if (checkWinner("X")) {
+        document.getElementById("gameStatus").innerText = "🎉 You Win!";
+        gameActive = false;
+        return;
+    }
+
+    aiMove();
+}
+
+function aiMove() {
+    let empty = board.map((v,i)=> v==""?i:null).filter(v=>v!==null);
+    if (empty.length === 0) return;
+
+    let move = empty[Math.floor(Math.random()*empty.length)];
+    board[move] = "O";
+    updateBoard();
+
+    if (checkWinner("O")) {
+        document.getElementById("gameStatus").innerText = "🤖 AI Wins!";
+        gameActive = false;
+    }
+}
+
+function updateBoard() { createBoard(); }
+
+function checkWinner(p) {
+    let c = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    return c.some(x => board[x[0]]===p && board[x[1]]===p && board[x[2]]===p);
+}
+
+function resetGame() {
+    board = ["","","","","","","","",""];
+    gameActive = true;
+    document.getElementById("gameStatus").innerText = "";
+    createBoard();
+}
+
+createBoard();
+
+// 🎵 Music Tiles (Web Audio API - guaranteed sound)
+let audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+const notes = [
+    261.63, 293.66, 329.63,
+    349.23, 392.00, 440.00, 493.88
+];
+
+function playTone(freq) {
+    let oscillator = audioContext.createOscillator();
+    let gainNode = audioContext.createGain();
+
+    oscillator.type = "sine";
+    oscillator.frequency.value = freq;
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+
+    oscillator.start();
+
+    setTimeout(() => {
+        oscillator.stop();
+    }, 400);
+}
+
+function createMusicTiles() {
+    let container = document.getElementById("musicTiles");
+
+    notes.forEach((note) => {
+        let tile = document.createElement("button");
+        tile.innerText = "🎵";
+
+        tile.onclick = () => {
+            audioContext.resume(); // required for mobile
+            playTone(note);
+
+            tile.style.transform = "scale(1.2)";
+            tile.style.background = "#4ecdc4";
+
+            setTimeout(() => {
+                tile.style.transform = "scale(1)";
+                tile.style.background = "";
+            }, 200);
+        };
+
+        container.appendChild(tile);
+    });
+}
+
+createMusicTiles();
+
+</script>
+
+</body>
